@@ -3,9 +3,15 @@ import requests
 import nltk
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from gensim.summarization import summarize
 from docx import Document
 from streamlit_lottie import st_lottie
+
+# Try lightweight summarizer from gensim if installed, else TextBlob fallback
+try:
+    from gensim.summarization import summarize
+    summarizer_available = True
+except ImportError:
+    summarizer_available = False
 
 nltk.download('punkt', quiet=True)
 
@@ -132,13 +138,17 @@ if analyze_btn:
         num_fillers = sum(tokens.count(w) for w in filler_words)
         avg_sent_len = len(tokens) // max(1, len(nltk.sent_tokenize(full_text)))
         tone = 'Positive' if vader_scores['compound'] > 0.2 else 'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
-        # Lightweight summary
-        try:
-            summary = summarize(full_text, word_count=50)
-            if not summary:
-                summary = "Summary not available (input too short or not enough variation)."
-        except Exception as e:
-            summary = "Summary error: " + str(e)
+        # Light summary, fallback to TextBlob if gensim not available
+        if summarizer_available:
+            try:
+                summary = summarize(full_text, word_count=50)
+                if not summary:
+                    summary = "Summary not available (input too short or not enough variation)."
+            except Exception as e:
+                summary = "Summary error: " + str(e)
+        else:
+            tb_summary = TextBlob(full_text).sentences[:3]
+            summary = " ".join([str(s) for s in tb_summary]) if tb_summary else "Summary not available."
         keywords = [w for w in set(tokens) if w.isalpha() and len(w) > 5]
         score = max(0, min(10, (
             (vader_scores['compound']+1)*3 +
@@ -215,12 +225,16 @@ if analyze_btn:
         st.markdown("---")
 
     st.header("🔎 AI Summary & Professional Guidance")
-    try:
-        session_summary = summarize(transcript, word_count=80)
-        if not session_summary:
-            session_summary = "Summary not available (input too short or not enough variation)."
-    except Exception as e:
-        session_summary = "Summary error: " + str(e)
+    if summarizer_available:
+        try:
+            session_summary = summarize(transcript, word_count=80)
+            if not session_summary:
+                session_summary = "Summary not available (input too short or not enough variation)."
+        except Exception as e:
+            session_summary = "Summary error: " + str(e)
+    else:
+        tb_ss = TextBlob(transcript).sentences[:5]
+        session_summary = " ".join([str(s) for s in tb_ss]) if tb_ss else "Summary not available."
     st.success(session_summary)
 
     pros, cons = [], []
