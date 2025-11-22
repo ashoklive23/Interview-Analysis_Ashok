@@ -5,13 +5,13 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from streamlit_lottie import st_lottie
 
-# --- NLTK punkt download fix ---
+# Ensure punkt data for NLTK is present
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
     nltk.download('punkt')
 
-# --- Light Summarizer: Try gensim, fallback to TextBlob ---
+# Use gensim summarization if available, else TextBlob
 try:
     from gensim.summarization import summarize
     summarizer_available = True
@@ -28,7 +28,6 @@ def load_lottie_url(url: str):
         return None
 
 lottie_interview = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json")
-
 vader = SentimentIntensityAnalyzer()
 
 def keyword_score(text, expected_keywords):
@@ -49,6 +48,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Sidebar
 with st.sidebar:
     if lottie_interview is not None:
         st_lottie(lottie_interview, speed=1, loop=True, quality="medium", height=100)
@@ -82,13 +82,12 @@ with st.sidebar:
 st.title("MentorFlow Interview Analytics")
 st.write("Paste your transcript below and click **Analyze**.")
 
+# Text area only, NO file upload
 text_input = st.text_area("Paste interview/group transcript here:", height=200)
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
-    transcript = ""
-    if text_input.strip():
-        transcript = text_input.strip()
+    transcript = text_input.strip()
 
     if not transcript or len(transcript) < 10:
         st.warning("Insufficient data for analysis. Please paste a transcript.")
