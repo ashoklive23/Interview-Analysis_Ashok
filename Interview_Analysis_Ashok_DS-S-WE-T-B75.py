@@ -4,8 +4,7 @@ import nltk
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from transformers import pipeline
-from docx import Document
-from streamlit_lottie import st_lottie
+from streamlit_lottie import st_lottie  # <--- Correct import
 
 nltk.download('punkt', quiet=True)
 
@@ -19,20 +18,16 @@ def load_lottie_url(url: str):
         return None
 
 lottie_interview = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json")
-lottie_bot = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_m9cnrcf3.json")
 
 vader = SentimentIntensityAnalyzer()
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-
-def read_docx(uploaded_file):
-    doc = Document(uploaded_file)
-    return '\n'.join([p.text for p in doc.paragraphs])
 
 def keyword_score(text, expected_keywords):
     found = [kw.lower() for kw in expected_keywords if kw.lower() in text.lower()]
     return len(found), found
 
 st.set_page_config(page_title="MentorFlow | AI Interview Analyzer", layout="wide")
+
 st.markdown("""
 <style>
     .badge {display:inline-block;border-radius:2em;padding:0.35em 1.5em;font-weight:bold;
@@ -48,91 +43,42 @@ st.markdown("""
 with st.sidebar:
     if lottie_interview is not None:
         st_lottie(lottie_interview, speed=1, loop=True, quality="medium", height=100)
-    else:
-        st.warning("Opening animation unavailable.")
     st.markdown('<div style="font-size:1.9em;font-weight:bold;color:#2e5cfc;">MentorFlow</div>', unsafe_allow_html=True)
     st.markdown('<div style="font-size:1.05em; color:#444;">AI Interview Analyzer</div>', unsafe_allow_html=True)
     st.markdown("---")
-    input_type = st.radio("Choose Input Type", [
-        "Text (.txt)",
-        "Word (.docx)",
-        "Paste Transcript",
-        "AI Meeting BOT"
-    ])
-    text_input = ""
-    uploaded_file = None
-    analyze_btn = None
-    # AI Meeting Bot
-    if input_type == "AI Meeting BOT":
-        st.markdown("### 🤖 AI Meeting Bot Join")
-        meeting_platform = st.selectbox(
-            "Meeting Platform", ["Microsoft Teams", "Google Meet", "Zoom", "Skype", "Webex"]
-        )
-        meeting_id = st.text_input("Enter Meeting Link or Meeting ID")
-        if lottie_bot is not None:
-            st_lottie(lottie_bot, speed=1, loop=True, height=90, quality="medium", key="meetbot")
-        else:
-            st.warning("Bot animation unavailable.")
-        bot_btn = st.button(f"Join & Analyze {meeting_platform} Meeting", key="joinbot")
-        if bot_btn:
-            if meeting_id.strip():
-                st.success(f"MentorFlow Bot is joining {meeting_platform} meeting: {meeting_id}")
-                st.info("Demo: In production, transcript/audio would be analyzed live!")
-            else:
-                st.error("Please enter a valid meeting link/ID.")
-    else:
-        industry = st.selectbox(
-            "Interview Domain",
-            ['IT', 'Supply Chain', 'Testing', 'BPO', 'Manufacturing', 'Banking', 'Healthcare', 'Retail', 'Marketing', 'Education', 'Other']
-        )
-        subdomain_options = {
-            "IT": ["Python", "SQL", "Java", "Data Science", "Cloud", "Cybersecurity", "DevOps","Frontend","Backend"],
-            "Supply Chain": ["Procurement", "Sourcing", "Logistics", "Warehousing", "Inventory", "Planning"],
-            "Testing": ["Manual", "Automation", "Performance", "Regression", "Security"],
-            "BPO": ["Customer Support", "Technical Support", "Finance & Accounting", "Data Entry"],
-            "Manufacturing": ["Production", "Quality", "Maintenance", "Safety", "Process Engineering"],
-            "Banking": ["Retail Banking", "Risk", "Treasury", "Corporate", "Credit"],
-            "Healthcare": ["Clinical", "Pharma", "MedTech", "Nursing", "Administration"],
-            "Retail": ["Store Ops", "Merchandising", "Supply", "Buying", "E-commerce"],
-            "Marketing": ["Digital", "Brand", "Content", "Market Research", "PR"],
-            "Education": ["Teaching", "Counseling", "Administration", "EdTech"],
-            "Other": ["Other"]
-        }
-        subdomain = st.selectbox(
-            "Subdomain/Role",
-            subdomain_options.get(industry, ["General"])
-        )
-        exp_level = st.radio("Candidate Type", ["Fresher", "Experienced"], index=0)
-        round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
-
-        if input_type == 'Paste Transcript':
-            text_input = st.text_area("Paste transcript here:", height=160)
-        else:
-            upload_types = {
-                'Text (.txt)': ['txt'],
-                'Word (.docx)': ['docx']
-            }
-            uploaded_file = st.file_uploader(
-                "Upload File",
-                type=upload_types[input_type] if input_type in upload_types else None
-            )
-        analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
+    industry = st.selectbox(
+        "Interview Domain",
+        ['IT', 'Supply Chain', 'Testing', 'BPO', 'Manufacturing', 'Banking', 'Healthcare', 'Retail', 'Marketing', 'Education', 'Other']
+    )
+    subdomain_options = {
+        "IT": ["Python", "SQL", "Java", "Data Science", "Cloud", "Cybersecurity", "DevOps", "Frontend", "Backend"],
+        "Supply Chain": ["Procurement", "Sourcing", "Logistics", "Warehousing", "Inventory", "Planning"],
+        "Testing": ["Manual", "Automation", "Performance", "Regression", "Security"],
+        "BPO": ["Customer Support", "Technical Support", "Finance & Accounting", "Data Entry"],
+        "Manufacturing": ["Production", "Quality", "Maintenance", "Safety", "Process Engineering"],
+        "Banking": ["Retail Banking", "Risk", "Treasury", "Corporate", "Credit"],
+        "Healthcare": ["Clinical", "Pharma", "MedTech", "Nursing", "Administration"],
+        "Retail": ["Store Ops", "Merchandising", "Supply", "Buying", "E-commerce"],
+        "Marketing": ["Digital", "Brand", "Content", "Market Research", "PR"],
+        "Education": ["Teaching", "Counseling", "Administration", "EdTech"],
+        "Other": ["Other"]
+    }
+    subdomain = st.selectbox(
+        "Subdomain/Role",
+        subdomain_options.get(industry, ["General"])
+    )
+    exp_level = st.radio("Candidate Type", ["Fresher", "Experienced"], index=0)
+    round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
 
 st.title("MentorFlow Interview Analytics")
-st.write("AI-powered evaluation & feedback for interviews and group discussions.")
+st.write("**Paste your interview/group discussion transcript below and click Analyze.**")
+
+text_input = st.text_area("Paste transcript here:", height=200)
+analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
-    transcript = ""
-    if input_type == 'Text (.txt)' and uploaded_file:
-        transcript = uploaded_file.read().decode('utf-8', errors='ignore')
-    elif input_type == 'Word (.docx)' and uploaded_file:
-        transcript = read_docx(uploaded_file)
-    elif input_type == 'Paste Transcript' and text_input.strip():
-        transcript = text_input.strip()
-    else:
-        st.error("Please upload a suitable file or paste transcript.")
-        st.stop()
-    if not transcript or len(transcript.strip()) < 10:
+    transcript = text_input.strip()
+    if not transcript or len(transcript) < 10:
         st.warning("Insufficient data for analysis.")
         st.stop()
 
@@ -286,16 +232,7 @@ if analyze_btn:
     """, unsafe_allow_html=True)
     st.balloons()
 
-    with st.expander("🔮 Innovation: Let AI Join Teams/Zoom/Meet and Evaluate Live", expanded=False):
-        st.markdown("""
-        AI InterviewBot could join your meeting live, analyze in real time, and send feedback to chat or a dashboard!
-        **How to Build:**
-        - Use Teams/Zoom/Meet SDK to get audio/transcript.
-        - Stream to MentorFlow backend.
-        - Present results in chat or post-meeting summary.
-        """)
-
 else:
-    st.info("Upload file or paste transcript, then click Analyze Now.")
+    st.info("Paste your transcript and click Analyze Now.")
 
 st.caption("MentorFlow | Professional AI Interview Analyzer | © 2025 Comet Assistant Team")
