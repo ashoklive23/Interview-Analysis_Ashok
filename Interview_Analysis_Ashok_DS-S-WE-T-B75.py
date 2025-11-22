@@ -5,13 +5,11 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from streamlit_lottie import st_lottie
 
-# Ensure punkt data for NLTK is present
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
     nltk.download('punkt')
 
-# Use gensim summarization if available, else TextBlob
 try:
     from gensim.summarization import summarize
     summarizer_available = True
@@ -81,14 +79,12 @@ with st.sidebar:
 st.title("MentorFlow Interview Analytics")
 st.write("Paste your transcript below and click **Analyze Now**.")
 
-# Only this text area for input — NO file uploader, NO drag and drop
+# THE ONLY INPUT WIDGET IS NEXT LINE
 text_input = st.text_area("Paste interview/group transcript here:", height=200)
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
-    # Only use text input; file upload no longer exists
     transcript = text_input.strip()
-
     if not transcript or len(transcript) < 10:
         st.warning("Insufficient data for analysis. Please paste a transcript.")
         st.stop()
