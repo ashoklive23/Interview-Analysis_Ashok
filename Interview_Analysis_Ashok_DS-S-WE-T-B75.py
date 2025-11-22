@@ -6,14 +6,18 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from docx import Document
 from streamlit_lottie import st_lottie
 
-# Try lightweight summarizer from gensim if installed, else TextBlob fallback
+# --- NLTK punkt download fix ---
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+# --- Light Summarizer: Try gensim, fallback to TextBlob ---
 try:
     from gensim.summarization import summarize
     summarizer_available = True
 except ImportError:
     summarizer_available = False
-
-nltk.download('punkt', quiet=True)
 
 def load_lottie_url(url: str):
     try:
@@ -58,7 +62,8 @@ with st.sidebar:
     st.markdown("---")
     industry = st.selectbox(
         "Interview Domain",
-        ['IT', 'Supply Chain', 'Testing', 'BPO', 'Manufacturing', 'Banking', 'Healthcare', 'Retail', 'Marketing', 'Education', 'Other']
+        ['IT', 'Supply Chain', 'Testing', 'BPO', 'Manufacturing', 'Banking', 'Healthcare',
+         'Retail', 'Marketing', 'Education', 'Other']
     )
     subdomain_options = {
         "IT": ["Python", "SQL", "Java", "Data Science", "Cloud", "Cybersecurity", "DevOps", "Frontend", "Backend"],
@@ -74,8 +79,7 @@ with st.sidebar:
         "Other": ["Other"]
     }
     subdomain = st.selectbox(
-        "Subdomain/Role",
-        subdomain_options.get(industry, ["General"])
+        "Subdomain/Role", subdomain_options.get(industry, ["General"])
     )
     exp_level = st.radio("Candidate Type", ["Fresher", "Experienced"], index=0)
     round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
@@ -138,7 +142,7 @@ if analyze_btn:
         num_fillers = sum(tokens.count(w) for w in filler_words)
         avg_sent_len = len(tokens) // max(1, len(nltk.sent_tokenize(full_text)))
         tone = 'Positive' if vader_scores['compound'] > 0.2 else 'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
-        # Light summary, fallback to TextBlob if gensim not available
+        # Summary block
         if summarizer_available:
             try:
                 summary = summarize(full_text, word_count=50)
