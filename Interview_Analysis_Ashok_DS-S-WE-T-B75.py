@@ -48,7 +48,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
 with st.sidebar:
     if lottie_interview is not None:
         st_lottie(lottie_interview, speed=1, loop=True, quality="medium", height=100)
@@ -80,13 +79,14 @@ with st.sidebar:
     round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
 
 st.title("MentorFlow Interview Analytics")
-st.write("Paste your transcript below and click **Analyze**.")
+st.write("Paste your transcript below and click **Analyze Now**.")
 
-# Text area only, NO file upload
+# Only this text area for input — NO file uploader, NO drag and drop
 text_input = st.text_area("Paste interview/group transcript here:", height=200)
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
+    # Only use text input; file upload no longer exists
     transcript = text_input.strip()
 
     if not transcript or len(transcript) < 10:
@@ -129,7 +129,8 @@ if analyze_btn:
         filler_words = ['um', 'uh', 'like', 'you know']
         num_fillers = sum(tokens.count(w) for w in filler_words)
         avg_sent_len = len(tokens) // max(1, len(nltk.sent_tokenize(full_text)))
-        tone = 'Positive' if vader_scores['compound'] > 0.2 else 'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
+        tone = 'Positive' if vader_scores['compound'] > 0.2 else \
+               'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
         # Summary block
         if summarizer_available:
             try:
