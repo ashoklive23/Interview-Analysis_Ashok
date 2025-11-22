@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import nltk
 from textblob import TextBlob
+from gensim.summarization import summarize
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from transformers import pipeline
 from streamlit_lottie import st_lottie  # <--- Correct import
 
 nltk.download('punkt', quiet=True)
@@ -20,7 +20,13 @@ def load_lottie_url(url: str):
 lottie_interview = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json")
 
 vader = SentimentIntensityAnalyzer()
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+# Safely summarize, handle short texts
+try:
+    summary = summarize(full_text, word_count=50)
+    if not summary:
+        summary = "Summary not available (input too short or not enough variation)."
+except Exception as e:
+    summary = "Summary error: " + str(e)
 
 def keyword_score(text, expected_keywords):
     found = [kw.lower() for kw in expected_keywords if kw.lower() in text.lower()]
@@ -236,3 +242,4 @@ else:
     st.info("Paste your transcript and click Analyze Now.")
 
 st.caption("MentorFlow | Professional AI Interview Analyzer | © 2025 Comet Assistant Team")
+
