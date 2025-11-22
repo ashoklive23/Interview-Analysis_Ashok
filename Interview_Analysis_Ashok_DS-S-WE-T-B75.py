@@ -3,7 +3,6 @@ import requests
 import nltk
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from docx import Document
 from streamlit_lottie import st_lottie
 
 # --- NLTK punkt download fix ---
@@ -31,10 +30,6 @@ def load_lottie_url(url: str):
 lottie_interview = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json")
 
 vader = SentimentIntensityAnalyzer()
-
-def read_docx(uploaded_file):
-    doc = Document(uploaded_file)
-    return '\n'.join([p.text for p in doc.paragraphs])
 
 def keyword_score(text, expected_keywords):
     found = [kw.lower() for kw in expected_keywords if kw.lower() in text.lower()]
@@ -85,24 +80,18 @@ with st.sidebar:
     round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
 
 st.title("MentorFlow Interview Analytics")
-st.write("Either paste your transcript below **or** upload a `.txt` or `.docx` file and click **Analyze**.")
+st.write("Paste your transcript below and click **Analyze**.")
 
 text_input = st.text_area("Paste interview/group transcript here:", height=200)
-uploaded_file = st.file_uploader("Or upload a transcript file (.txt or .docx)", type=['txt', 'docx'])
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
     transcript = ""
-    if uploaded_file is not None:
-        if uploaded_file.name.lower().endswith(".txt"):
-            transcript = uploaded_file.read().decode('utf-8', errors='ignore')
-        elif uploaded_file.name.lower().endswith(".docx"):
-            transcript = read_docx(uploaded_file)
-    elif text_input.strip():
+    if text_input.strip():
         transcript = text_input.strip()
 
     if not transcript or len(transcript) < 10:
-        st.warning("Insufficient data for analysis. Please upload a file or paste transcript.")
+        st.warning("Insufficient data for analysis. Please paste a transcript.")
         st.stop()
 
     domain_keywords = {
@@ -275,6 +264,6 @@ if analyze_btn:
     st.balloons()
 
 else:
-    st.info("Paste transcript OR upload .txt/.docx file, then click Analyze Now.")
+    st.info("Paste transcript, then click Analyze Now.")
 
 st.caption("MentorFlow | Professional AI Interview Analyzer | © 2025 Comet Assistant Team")
