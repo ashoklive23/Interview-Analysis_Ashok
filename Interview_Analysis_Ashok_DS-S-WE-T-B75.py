@@ -1,14 +1,10 @@
 import streamlit as st
-import tempfile
-import os
 import requests
 import nltk
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from transformers import pipeline
-from pydub import AudioSegment
 from docx import Document
-import whisper
 from streamlit_lottie import st_lottie
 
 nltk.download('punkt', quiet=True)
@@ -27,20 +23,6 @@ lottie_bot = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_m9cn
 
 vader = SentimentIntensityAnalyzer()
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-
-# Fastest model
-@st.cache_resource
-def load_whisper():
-    return whisper.load_model("tiny")
-
-def transcribe_audio(uploaded_audio):
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
-    audio = AudioSegment.from_file(uploaded_audio)
-    audio.export(temp.name, format="wav")
-    model = load_whisper()
-    result = model.transcribe(temp.name)
-    os.remove(temp.name)
-    return result["text"]
 
 def read_docx(uploaded_file):
     doc = Document(uploaded_file)
@@ -72,10 +54,9 @@ with st.sidebar:
     st.markdown('<div style="font-size:1.05em; color:#444;">AI Interview Analyzer</div>', unsafe_allow_html=True)
     st.markdown("---")
     input_type = st.radio("Choose Input Type", [
-        "Audio (.mp3/.wav/.m4a)",
         "Text (.txt)",
         "Word (.docx)",
-        "Paste Text",
+        "Paste Transcript",
         "AI Meeting BOT"
     ])
     text_input = ""
@@ -124,11 +105,10 @@ with st.sidebar:
         exp_level = st.radio("Candidate Type", ["Fresher", "Experienced"], index=0)
         round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
 
-        if input_type == 'Paste Text':
+        if input_type == 'Paste Transcript':
             text_input = st.text_area("Paste transcript here:", height=160)
         else:
             upload_types = {
-                'Audio (.mp3/.wav/.m4a)': ['mp3', 'wav', 'm4a'],
                 'Text (.txt)': ['txt'],
                 'Word (.docx)': ['docx']
             }
@@ -136,32 +116,21 @@ with st.sidebar:
                 "Upload File",
                 type=upload_types[input_type] if input_type in upload_types else None
             )
-        analyze_btn = st.button("🎙️ Analyze Now", use_container_width=True)
+        analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 st.title("MentorFlow Interview Analytics")
 st.write("AI-powered evaluation & feedback for interviews and group discussions.")
 
 if analyze_btn:
     transcript = ""
-    # AUDIO: Check for short file before transcribing!
-    if input_type == 'Audio (.mp3/.wav/.m4a)' and uploaded_file:
-        # Speed: Limit to 30 seconds!
-        audio = AudioSegment.from_file(uploaded_file)
-        duration_sec = len(audio) / 1000
-        if duration_sec > 30:
-            st.error("Audio > 30s. Please upload a shorter audio file for fastest results.")
-            st.stop()
-        st.info(":blue[Note: Only audio <=30s allowed for instant result! Whisper Tiny engine used.]")
-        transcript = transcribe_audio(uploaded_file)
-        st.success("Audio successfully transcribed!")
-    elif input_type == 'Text (.txt)' and uploaded_file:
+    if input_type == 'Text (.txt)' and uploaded_file:
         transcript = uploaded_file.read().decode('utf-8', errors='ignore')
     elif input_type == 'Word (.docx)' and uploaded_file:
         transcript = read_docx(uploaded_file)
-    elif input_type == 'Paste Text' and text_input.strip():
+    elif input_type == 'Paste Transcript' and text_input.strip():
         transcript = text_input.strip()
     else:
-        st.error("Please upload or paste transcript.")
+        st.error("Please upload a suitable file or paste transcript.")
         st.stop()
     if not transcript or len(transcript.strip()) < 10:
         st.warning("Insufficient data for analysis.")
@@ -320,13 +289,13 @@ if analyze_btn:
     with st.expander("🔮 Innovation: Let AI Join Teams/Zoom/Meet and Evaluate Live", expanded=False):
         st.markdown("""
         AI InterviewBot could join your meeting live, analyze in real time, and send feedback to chat or a dashboard!
-
         **How to Build:**
         - Use Teams/Zoom/Meet SDK to get audio/transcript.
         - Stream to MentorFlow backend.
         - Present results in chat or post-meeting summary.
         """)
+
 else:
-    st.info("Upload or paste transcript, then click Analyze Now.")
+    st.info("Upload file or paste transcript, then click Analyze Now.")
 
 st.caption("MentorFlow | Professional AI Interview Analyzer | © 2025 Comet Assistant Team")
