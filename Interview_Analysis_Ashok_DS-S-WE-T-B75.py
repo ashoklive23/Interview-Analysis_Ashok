@@ -2,9 +2,10 @@ import streamlit as st
 import requests
 import nltk
 from textblob import TextBlob
-from gensim.summarization import summarize
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from streamlit_lottie import st_lottie  # <--- Correct import
+from gensim.summarization import summarize
+from docx import Document
+from streamlit_lottie import st_lottie
 
 nltk.download('punkt', quiet=True)
 
@@ -20,13 +21,10 @@ def load_lottie_url(url: str):
 lottie_interview = load_lottie_url("https://assets9.lottiefiles.com/packages/lf20_jcikwtux.json")
 
 vader = SentimentIntensityAnalyzer()
-# Safely summarize, handle short texts
-try:
-    summary = summarize(full_text, word_count=50)
-    if not summary:
-        summary = "Summary not available (input too short or not enough variation)."
-except Exception as e:
-    summary = "Summary error: " + str(e)
+
+def read_docx(uploaded_file):
+    doc = Document(uploaded_file)
+    return '\n'.join([p.text for p in doc.paragraphs])
 
 def keyword_score(text, expected_keywords):
     found = [kw.lower() for kw in expected_keywords if kw.lower() in text.lower()]
@@ -77,15 +75,24 @@ with st.sidebar:
     round_type = st.selectbox("Round Type", ['Interview', 'Group Discussion', 'Mock'])
 
 st.title("MentorFlow Interview Analytics")
-st.write("**Paste your interview/group discussion transcript below and click Analyze.**")
+st.write("Either paste your transcript below **or** upload a `.txt` or `.docx` file and click **Analyze**.")
 
-text_input = st.text_area("Paste transcript here:", height=200)
+text_input = st.text_area("Paste interview/group transcript here:", height=200)
+uploaded_file = st.file_uploader("Or upload a transcript file (.txt or .docx)", type=['txt', 'docx'])
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
 if analyze_btn:
-    transcript = text_input.strip()
+    transcript = ""
+    if uploaded_file is not None:
+        if uploaded_file.name.lower().endswith(".txt"):
+            transcript = uploaded_file.read().decode('utf-8', errors='ignore')
+        elif uploaded_file.name.lower().endswith(".docx"):
+            transcript = read_docx(uploaded_file)
+    elif text_input.strip():
+        transcript = text_input.strip()
+
     if not transcript or len(transcript) < 10:
-        st.warning("Insufficient data for analysis.")
+        st.warning("Insufficient data for analysis. Please upload a file or paste transcript.")
         st.stop()
 
     domain_keywords = {
@@ -125,7 +132,13 @@ if analyze_btn:
         num_fillers = sum(tokens.count(w) for w in filler_words)
         avg_sent_len = len(tokens) // max(1, len(nltk.sent_tokenize(full_text)))
         tone = 'Positive' if vader_scores['compound'] > 0.2 else 'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
-        summary = summarizer(full_text, max_length=50, min_length=10, do_sample=False)[0]['summary_text']
+        # Lightweight summary
+        try:
+            summary = summarize(full_text, word_count=50)
+            if not summary:
+                summary = "Summary not available (input too short or not enough variation)."
+        except Exception as e:
+            summary = "Summary error: " + str(e)
         keywords = [w for w in set(tokens) if w.isalpha() and len(w) > 5]
         score = max(0, min(10, (
             (vader_scores['compound']+1)*3 +
@@ -202,7 +215,12 @@ if analyze_btn:
         st.markdown("---")
 
     st.header("🔎 AI Summary & Professional Guidance")
-    session_summary = summarizer(transcript, max_length=80, min_length=20, do_sample=False)[0]['summary_text']
+    try:
+        session_summary = summarize(transcript, word_count=80)
+        if not session_summary:
+            session_summary = "Summary not available (input too short or not enough variation)."
+    except Exception as e:
+        session_summary = "Summary error: " + str(e)
     st.success(session_summary)
 
     pros, cons = [], []
@@ -239,7 +257,6 @@ if analyze_btn:
     st.balloons()
 
 else:
-    st.info("Paste your transcript and click Analyze Now.")
+    st.info("Paste transcript OR upload .txt/.docx file, then click Analyze Now.")
 
 st.caption("MentorFlow | Professional AI Interview Analyzer | © 2025 Comet Assistant Team")
-
