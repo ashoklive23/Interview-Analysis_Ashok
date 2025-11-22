@@ -5,6 +5,7 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from streamlit_lottie import st_lottie
 
+# Fix for NLTK punkt tokenizer error
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -79,7 +80,6 @@ with st.sidebar:
 st.title("MentorFlow Interview Analytics")
 st.write("Paste your transcript below and click **Analyze Now**.")
 
-# THE ONLY INPUT WIDGET IS NEXT LINE
 text_input = st.text_area("Paste interview/group transcript here:", height=200)
 analyze_btn = st.button("📝 Analyze Now", use_container_width=True)
 
@@ -125,9 +125,7 @@ if analyze_btn:
         filler_words = ['um', 'uh', 'like', 'you know']
         num_fillers = sum(tokens.count(w) for w in filler_words)
         avg_sent_len = len(tokens) // max(1, len(nltk.sent_tokenize(full_text)))
-        tone = 'Positive' if vader_scores['compound'] > 0.2 else \
-               'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
-        # Summary block
+        tone = 'Positive' if vader_scores['compound'] > 0.2 else 'Negative' if vader_scores['compound'] < -0.2 else 'Neutral'
         if summarizer_available:
             try:
                 summary = summarize(full_text, word_count=50)
@@ -258,7 +256,6 @@ if analyze_btn:
     </div>
     """, unsafe_allow_html=True)
     st.balloons()
-
 else:
     st.info("Paste transcript, then click Analyze Now.")
 
