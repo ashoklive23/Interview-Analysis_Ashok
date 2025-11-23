@@ -5,11 +5,18 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from streamlit_lottie import st_lottie
 
-# Fix for NLTK punkt tokenizer error
+# --- FIX FOR NLTK ERRORS ---
+# Newer NLTK versions require 'punkt_tab' for tokenization
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
     nltk.download('punkt')
+
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab')
+# ---------------------------
 
 try:
     from gensim.summarization import summarize
